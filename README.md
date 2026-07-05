@@ -4,7 +4,7 @@ A modern business collaboration platform built with **React, TypeScript, Vite, a
 
 ## 🌐 Live Demo
 
-**Vercel:** https://your-vercel-url.vercel.app
+**Vercel:** https://vercel.com/manahil-abid1/nexus
 
 ## 📂 GitHub Repository
 

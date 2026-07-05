@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Menu, X, Bell, MessageCircle, User, LogOut, Building2, CircleDollarSign } from 'lucide-react';
+import { Menu, X, Bell, MessageCircle, User, LogOut, Building2, CircleDollarSign, Compass } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
+import { Badge } from '../ui/Badge';
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  onStartTour?: () => void;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ onStartTour }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -86,6 +91,14 @@ export const Navbar: React.FC = () => {
                 
                 <Button 
                   variant="ghost"
+                  onClick={onStartTour}
+                  leftIcon={<Compass size={18} />}
+                >
+                  Take a tour
+                </Button>
+
+                <Button 
+                  variant="ghost"
                   onClick={handleLogout}
                   leftIcon={<LogOut size={18} />}
                 >
@@ -100,6 +113,9 @@ export const Navbar: React.FC = () => {
                     status={user.isOnline ? 'online' : 'offline'}
                   />
                   <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                  <Badge variant={user.role === 'investor' ? 'accent' : 'secondary'} size="sm" className="capitalize">
+                    {user.role}
+                  </Badge>
                 </Link>
               </div>
             ) : (
@@ -162,6 +178,17 @@ export const Navbar: React.FC = () => {
                     </Link>
                   ))}
                   
+                  <button
+                    onClick={() => {
+                      onStartTour?.();
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex w-full items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md"
+                  >
+                    <Compass size={18} className="mr-3" />
+                    Take a tour
+                  </button>
+
                   <button
                     onClick={() => {
                       handleLogout();

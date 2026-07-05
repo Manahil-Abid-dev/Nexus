@@ -57,6 +57,61 @@ export interface CollaborationRequest {
   createdAt: string;
 }
 
+export interface AvailabilitySlot {
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  isBooked: boolean;
+}
+
+export type MeetingStatus = 'pending' | 'accepted' | 'declined' | 'cancelled';
+
+export interface MeetingRequest {
+  id: string;
+  requesterId: string;
+  hostId: string;
+  slotId: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  topic: string;
+  status: MeetingStatus;
+  createdAt: string;
+}
+
+export type DealDocumentStatus = 'Draft' | 'In Review' | 'Signed';
+
+export interface DealDocument {
+  id: string;
+  ownerId: string; // who uploaded the document
+  partnerId: string; // the counterpart on the other side of the deal
+  name: string;
+  fileType: string; // pdf, docx, xlsx, png, etc. (derived from the file extension)
+  size: string;
+  uploadedAt: string;
+  status: DealDocumentStatus;
+  previewUrl?: string; // object URL / data URL, when a preview is available
+  signatureDataUrl?: string;
+  signedBy?: string;
+  signedAt?: string;
+}
+
+export type TransactionType = 'deposit' | 'withdrawal' | 'transfer' | 'funding';
+export type TransactionStatus = 'completed' | 'pending' | 'failed';
+
+export interface Transaction {
+  id: string;
+  type: TransactionType;
+  amount: number;
+  senderId: string; // for deposits, this is the user themself (external source)
+  receiverId: string; // for withdrawals, this is the user themself (external destination)
+  status: TransactionStatus;
+  note?: string;
+  createdAt: string;
+}
+
 export interface Document {
   id: string;
   name: string;

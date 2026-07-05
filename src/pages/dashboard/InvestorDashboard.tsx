@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, PieChart, Filter, Search, PlusCircle } from 'lucide-react';
+import { Users, PieChart, Filter, Search, PlusCircle, Calendar as CalendarIcon, Wallet as WalletIcon } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -8,8 +8,11 @@ import { Badge } from '../../components/ui/Badge';
 import { EntrepreneurCard } from '../../components/entrepreneur/EntrepreneurCard';
 import { useAuth } from '../../context/AuthContext';
 import { Entrepreneur } from '../../types';
-import { entrepreneurs } from '../../data/users';
+import { entrepreneurs, findUserById } from '../../data/users';
 import { getRequestsFromInvestor } from '../../data/collaborationRequests';
+import { getConfirmedMeetingsForUser } from '../../data/meetings';
+import { getBalance } from '../../data/wallet';
+import { format, parseISO } from 'date-fns';
 
 export const InvestorDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -21,6 +24,8 @@ export const InvestorDashboard: React.FC = () => {
   // Get collaboration requests sent by this investor
   const sentRequests = getRequestsFromInvestor(user.id);
   const requestedEntrepreneurIds = sentRequests.map(req => req.entrepreneurId);
+  const confirmedMeetings = getConfirmedMeetingsForUser(user.id);
+  const walletBalance = getBalance(user.id);
   
   // Filter entrepreneurs based on search and industry filters
   const filteredEntrepreneurs = entrepreneurs.filter(entrepreneur => {
@@ -101,7 +106,7 @@ export const InvestorDashboard: React.FC = () => {
       </div>
       
       {/* Stats summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="bg-primary-50 border border-primary-100">
           <CardBody>
             <div className="flex items-center">
@@ -145,7 +150,74 @@ export const InvestorDashboard: React.FC = () => {
             </div>
           </CardBody>
         </Card>
+
+        <Link to="/calendar">
+          <Card className="bg-success-50 border border-success-100" hoverable>
+            <CardBody>
+              <div className="flex items-center">
+                <div className="p-3 bg-green-100 rounded-full mr-4">
+                  <CalendarIcon size={20} className="text-success-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-success-700">Upcoming Meetings</p>
+                  <h3 className="text-xl font-semibold text-success-900">{confirmedMeetings.length}</h3>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        </Link>
+
+        <Link to="/wallet">
+          <Card className="bg-primary-50 border border-primary-100" hoverable>
+            <CardBody>
+              <div className="flex items-center">
+                <div className="p-3 bg-primary-100 rounded-full mr-4">
+                  <WalletIcon size={20} className="text-primary-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-primary-700">Wallet Balance</p>
+                  <h3 className="text-xl font-semibold text-primary-900">
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(walletBalance)}
+                  </h3>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        </Link>
       </div>
+      
+      {/* Upcoming meetings */}
+      <Card>
+        <CardHeader className="flex justify-between items-center">
+          <h2 className="text-lg font-medium text-gray-900">Upcoming Meetings</h2>
+          <Link to="/calendar" className="text-sm font-medium text-primary-600 hover:text-primary-500">
+            View calendar
+          </Link>
+        </CardHeader>
+        <CardBody>
+          {confirmedMeetings.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {confirmedMeetings.map(meeting => {
+                const counterpartId = meeting.hostId === user.id ? meeting.requesterId : meeting.hostId;
+                const counterpart = findUserById(counterpartId);
+                return (
+                  <div key={meeting.id} className="flex items-center justify-between px-3 py-2 rounded-md bg-gray-50 border border-gray-100">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{counterpart?.name ?? 'Unknown'}</p>
+                      <p className="text-xs text-gray-500">
+                        {format(parseISO(meeting.date), 'EEE, MMM d')} · {meeting.startTime}
+                      </p>
+                    </div>
+                    <Badge variant="success" size="sm">Confirmed</Badge>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 py-4 text-center">No meetings scheduled yet</p>
+          )}
+        </CardBody>
+      </Card>
       
       {/* Entrepreneurs grid */}
       <div>

@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, CircleDollarSign, Building2, LogIn, AlertCircle } from 'lucide-react';
+import { User, CircleDollarSign, Building2, LogIn, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { UserRole } from '../../types';
+
+const OTP_LENGTH = 6;
+// Mock OTP - in the real product this would be generated/sent server-side; here it's fixed so the flow is testable
+const MOCK_OTP = '123456';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,22 +16,61 @@ export const LoginPage: React.FC = () => {
   const [role, setRole] = useState<UserRole>('entrepreneur');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
+  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   
   const { login } = useAuth();
   const navigate = useNavigate();
   
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCredentialsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    // Move to the 2FA mockup step instead of logging in immediately
+    setStep('otp');
+    setTimeout(() => otpInputRefs.current[0]?.focus(), 50);
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const next = [...otp];
+    next[index] = value.slice(-1);
+    setOtp(next);
+    if (value && index < OTP_LENGTH - 1) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const code = otp.join('');
+
+    if (code.length < OTP_LENGTH) {
+      setError('Enter the full 6-digit code');
+      return;
+    }
+
+    // Mock verification - accepts the demo code; an explicit "000000" simulates an invalid code for demoing the error state
+    if (code === '000000') {
+      setError(`Invalid verification code. Try ${MOCK_OTP} for this demo.`);
+      return;
+    }
+
     setIsLoading(true);
-    
     try {
       await login(email, password, role);
-      // Redirect based on user role
       navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
     } catch (err) {
       setError((err as Error).message);
       setIsLoading(false);
+      setStep('credentials');
     }
   };
   
@@ -71,7 +114,8 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
           
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          {step === 'credentials' ? (
+          <form className="space-y-6" onSubmit={handleCredentialsSubmit}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 I am a
@@ -147,13 +191,60 @@ export const LoginPage: React.FC = () => {
             <Button
               type="submit"
               fullWidth
+              leftIcon={<LogIn size={18} />}
+            >
+              Continue
+            </Button>
+          </form>
+          ) : (
+          <form className="space-y-6" onSubmit={handleVerifyOtp}>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mb-3">
+                <ShieldCheck size={24} className="text-primary-600" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900">Two-factor verification</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Enter the 6-digit code sent to <span className="font-medium">{email || 'your device'}</span>
+              </p>
+              <p className="text-xs text-gray-400 mt-1">(Demo code: {MOCK_OTP})</p>
+            </div>
+
+            <div className="flex justify-center gap-2">
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={el => (otpInputRefs.current[index] = el)}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={e => handleOtpChange(index, e.target.value)}
+                  onKeyDown={e => handleOtpKeyDown(index, e)}
+                  className="w-11 h-12 text-center text-lg font-semibold rounded-md border border-gray-300 focus:border-primary-500 focus:ring-primary-500"
+                />
+              ))}
+            </div>
+
+            <Button
+              type="submit"
+              fullWidth
               isLoading={isLoading}
               leftIcon={<LogIn size={18} />}
             >
-              Sign in
+              Verify & Sign in
             </Button>
+
+            <button
+              type="button"
+              onClick={() => { setStep('credentials'); setOtp(Array(OTP_LENGTH).fill('')); setError(null); }}
+              className="w-full flex items-center justify-center text-sm text-gray-500 hover:text-gray-700"
+            >
+              <ArrowLeft size={14} className="mr-1" /> Back
+            </button>
           </form>
+          )}
           
+          {step === 'credentials' && (
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -182,7 +273,9 @@ export const LoginPage: React.FC = () => {
               </Button>
             </div>
           </div>
+          )}
           
+          {step === 'credentials' && (
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -202,6 +295,7 @@ export const LoginPage: React.FC = () => {
               </p>
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,14 +1,17 @@
-import React from 'react';
-import { User, Lock, Bell, Globe, Palette, CreditCard } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Lock, Bell, Globe, Palette, CreditCard, ShieldCheck } from 'lucide-react';
 import { Card, CardHeader, CardBody } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Avatar } from '../../components/ui/Avatar';
+import { PasswordStrengthMeter } from '../../components/security/PasswordStrengthMeter';
 import { useAuth } from '../../context/AuthContext';
 
 export const SettingsPage: React.FC = () => {
   const { user } = useAuth();
+  const [newPassword, setNewPassword] = useState('');
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   
   if (!user) return null;
   
@@ -137,10 +140,26 @@ export const SettingsPage: React.FC = () => {
                     <p className="text-sm text-gray-600">
                       Add an extra layer of security to your account
                     </p>
-                    <Badge variant="error" className="mt-1">Not Enabled</Badge>
+                    {twoFactorEnabled ? (
+                      <Badge variant="success" className="mt-1 flex items-center gap-1 w-fit">
+                        <ShieldCheck size={12} /> Enabled
+                      </Badge>
+                    ) : (
+                      <Badge variant="error" className="mt-1">Not Enabled</Badge>
+                    )}
                   </div>
-                  <Button variant="outline">Enable</Button>
+                  <Button
+                    variant={twoFactorEnabled ? 'outline' : 'primary'}
+                    onClick={() => setTwoFactorEnabled(v => !v)}
+                  >
+                    {twoFactorEnabled ? 'Disable' : 'Enable'}
+                  </Button>
                 </div>
+                {twoFactorEnabled && (
+                  <p className="text-xs text-gray-500 mt-3">
+                    You'll be asked for a one-time code from your authenticator app each time you sign in.
+                  </p>
+                )}
               </div>
               
               <div className="pt-6 border-t border-gray-200">
@@ -154,7 +173,10 @@ export const SettingsPage: React.FC = () => {
                   <Input
                     label="New Password"
                     type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
                   />
+                  <PasswordStrengthMeter password={newPassword} />
                   
                   <Input
                     label="Confirm New Password"

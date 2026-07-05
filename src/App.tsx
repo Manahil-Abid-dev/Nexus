@@ -26,6 +26,10 @@ import { DocumentsPage } from './pages/documents/DocumentsPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { HelpPage } from './pages/help/HelpPage';
 import { DealsPage } from './pages/deals/DealsPage';
+import { CalendarPage } from './pages/calendar/CalendarPage';
+import { VideoCallPage } from './pages/call/VideoCallPage';
+import { DocumentChamberPage } from './pages/documents/DocumentChamberPage';
+import { WalletPage } from './pages/wallet/WalletPage';
 
 // Chat Pages
 import { ChatPage } from './pages/chat/ChatPage';
@@ -82,6 +86,22 @@ function App() {
           
           <Route path="/deals" element={<DashboardLayout />}>
             <Route index element={<DealsPage />} />
+          </Route>
+          
+          <Route path="/calendar" element={<DashboardLayout />}>
+            <Route index element={<CalendarPage />} />
+          </Route>
+          
+          <Route path="/call" element={<DashboardLayout />}>
+            <Route path=":userId" element={<VideoCallPage />} />
+          </Route>
+          
+          <Route path="/document-chamber" element={<DashboardLayout />}>
+            <Route index element={<DocumentChamberPage />} />
+          </Route>
+          
+          <Route path="/wallet" element={<DashboardLayout />}>
+            <Route index element={<WalletPage />} />
           </Route>
           
           {/* Chat Routes */}

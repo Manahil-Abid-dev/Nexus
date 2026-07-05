@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Bell, Calendar, TrendingUp, AlertCircle, PlusCircle } from 'lucide-react';
+import { Users, Bell, Calendar, TrendingUp, AlertCircle, PlusCircle, Wallet as WalletIcon } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -9,7 +9,10 @@ import { InvestorCard } from '../../components/investor/InvestorCard';
 import { useAuth } from '../../context/AuthContext';
 import { CollaborationRequest } from '../../types';
 import { getRequestsForEntrepreneur } from '../../data/collaborationRequests';
-import { investors } from '../../data/users';
+import { getConfirmedMeetingsForUser } from '../../data/meetings';
+import { getBalance } from '../../data/wallet';
+import { findUserById, investors } from '../../data/users';
+import { format, parseISO } from 'date-fns';
 
 export const EntrepreneurDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -35,6 +38,8 @@ export const EntrepreneurDashboard: React.FC = () => {
   if (!user) return null;
   
   const pendingRequests = collaborationRequests.filter(req => req.status === 'pending');
+  const confirmedMeetings = getConfirmedMeetingsForUser(user.id);
+  const walletBalance = getBalance(user.id);
   
   return (
     <div className="space-y-6 animate-fade-in">
@@ -54,7 +59,7 @@ export const EntrepreneurDashboard: React.FC = () => {
       </div>
       
       {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="bg-primary-50 border border-primary-100">
           <CardBody>
             <div className="flex items-center">
@@ -85,19 +90,21 @@ export const EntrepreneurDashboard: React.FC = () => {
           </CardBody>
         </Card>
         
-        <Card className="bg-accent-50 border border-accent-100">
-          <CardBody>
-            <div className="flex items-center">
-              <div className="p-3 bg-accent-100 rounded-full mr-4">
-                <Calendar size={20} className="text-accent-700" />
+        <Link to="/calendar">
+          <Card className="bg-accent-50 border border-accent-100" hoverable>
+            <CardBody>
+              <div className="flex items-center">
+                <div className="p-3 bg-accent-100 rounded-full mr-4">
+                  <Calendar size={20} className="text-accent-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-accent-700">Upcoming Meetings</p>
+                  <h3 className="text-xl font-semibold text-accent-900">{confirmedMeetings.length}</h3>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-accent-700">Upcoming Meetings</p>
-                <h3 className="text-xl font-semibold text-accent-900">2</h3>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+        </Link>
         
         <Card className="bg-success-50 border border-success-100">
           <CardBody>
@@ -112,6 +119,24 @@ export const EntrepreneurDashboard: React.FC = () => {
             </div>
           </CardBody>
         </Card>
+
+        <Link to="/wallet">
+          <Card className="bg-primary-50 border border-primary-100" hoverable>
+            <CardBody>
+              <div className="flex items-center">
+                <div className="p-3 bg-primary-100 rounded-full mr-4">
+                  <WalletIcon size={20} className="text-primary-700" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-primary-700">Wallet Balance</p>
+                  <h3 className="text-xl font-semibold text-primary-900">
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(walletBalance)}
+                  </h3>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        </Link>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -147,7 +172,7 @@ export const EntrepreneurDashboard: React.FC = () => {
           </Card>
         </div>
         
-        {/* Recommended investors */}
+        {/* Recommended investors + confirmed meetings */}
         <div className="space-y-4">
           <Card>
             <CardHeader className="flex justify-between items-center">
@@ -165,6 +190,37 @@ export const EntrepreneurDashboard: React.FC = () => {
                   showActions={false}
                 />
               ))}
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex justify-between items-center">
+              <h2 className="text-lg font-medium text-gray-900">Upcoming Meetings</h2>
+              <Link to="/calendar" className="text-sm font-medium text-primary-600 hover:text-primary-500">
+                View calendar
+              </Link>
+            </CardHeader>
+
+            <CardBody className="space-y-3">
+              {confirmedMeetings.length > 0 ? (
+                confirmedMeetings.slice(0, 3).map(meeting => {
+                  const counterpartId = meeting.hostId === user.id ? meeting.requesterId : meeting.hostId;
+                  const counterpart = findUserById(counterpartId);
+                  return (
+                    <div key={meeting.id} className="flex items-center justify-between px-3 py-2 rounded-md bg-gray-50 border border-gray-100">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{counterpart?.name ?? 'Unknown'}</p>
+                        <p className="text-xs text-gray-500">
+                          {format(parseISO(meeting.date), 'EEE, MMM d')} · {meeting.startTime}
+                        </p>
+                      </div>
+                      <Badge variant="success" size="sm">Confirmed</Badge>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-gray-500 py-2 text-center">No meetings scheduled yet</p>
+              )}
             </CardBody>
           </Card>
         </div>
